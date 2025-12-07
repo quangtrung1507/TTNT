@@ -1,0 +1,1101 @@
+# Cờ Tic-Tac-Toe / Caro NxN với Minimax & Alpha-Beta (Tkinter)
+
+Chương trình chơi cờ Tic-Tac-Toe/Caro trên bàn cờ **N×N** (với N ≥ 3), trong đó người chơi đấu với AI.  
+AI sử dụng các thuật toán **Minimax** và **Cắt tỉa Alpha-Beta** kết hợp với **hàm lượng giá (heuristic)** để lựa chọn nước đi.
+
+Giao diện được xây dựng bằng **Tkinter** (GUI cơ bản trong Python).
+
+---
+
+## 1. Giới thiệu
+
+### 1.1. Bối cảnh
+
+Trong các học phần về **trí tuệ nhân tạo** và **thuật toán tìm kiếm**, trò chơi đối kháng hai người (cờ caro, tic-tac-toe, cờ vua,…) là ví dụ điển hình để minh họa cho:
+
+- Khái niệm **không gian trạng thái** (state space).
+- **Cây trò chơi** (game tree) và quá trình duyệt.
+- Các thuật toán **Minimax**, **Alpha-Beta pruning**.
+- Cách xây dựng **hàm lượng giá (heuristic)** cho các trạng thái trung gian.
+
+Trò chơi **Tic-Tac-Toe/Caro trên bàn cờ N×N** vừa đơn giản về luật chơi, vừa đủ phức tạp khi:
+
+- Mở rộng kích thước bàn N lớn.
+- Áp dụng giới hạn độ sâu tìm kiếm.
+- Không thể duyệt hết mọi trạng thái → buộc phải dùng heuristic và cắt tỉa.
+
+Vì vậy, đề tài:
+
+> **“Xây dựng chương trình chơi cờ Tic-Tac-Toe/Caro trên bàn N×N sử dụng thuật toán Minimax và Alpha-Beta, có giao diện Tkinter”**
+
+giúp:
+
+- Vận dụng kiến thức lý thuyết vào một bài toán cụ thể.
+- Trực quan hóa hoạt động của thuật toán thông qua một trò chơi quen thuộc.
+
+### 1.2. Mục tiêu của đề tài
+
+Đề tài hướng tới các mục tiêu chính:
+
+#### 1. Mô hình hóa trò chơi cờ Tic-Tac-Toe/Caro tổng quát
+
+- Bàn cờ kích thước **N×N**, với **N ≥ 3**.
+- Luật thắng linh hoạt theo kích thước:
+  - N = 3: thắng khi có **3 quân liên tiếp**.
+  - N = 4: thắng khi có **4 quân liên tiếp**.
+  - N ≥ 5: thắng khi có **5 quân liên tiếp** (giống cờ caro).
+- Kiểm tra thắng/thua/hòa theo 4 hướng:
+  - Hàng ngang
+  - Cột dọc
+  - Đường chéo chính
+  - Đường chéo phụ
+
+#### 2. Cài đặt và áp dụng Minimax + Alpha-Beta
+
+- Biểu diễn trạng thái trò chơi bằng lớp **`Board`**.
+- Cài đặt thuật toán **Minimax** có giới hạn độ sâu.
+- Cài đặt thuật toán **Alpha-Beta pruning** để giảm số node duyệt.
+- Bổ sung chiến lược **sinh nước đi thông minh**:
+  - Chỉ xét các ô trống nằm trong vùng lân cận các quân đã đánh.
+
+#### 3. Xây dựng hàm lượng giá (heuristic)
+
+- Đánh giá trạng thái dựa trên **số lượng quân liên tiếp** của mỗi bên.
+- Sử dụng **trọng số khác nhau** cho chuỗi 1, 2, 3, 4, 5 quân.
+- Giá trị cuối cùng:
+  - `score = điểm của AI – điểm của đối thủ`.
+
+#### 4. Phát triển giao diện Tkinter
+
+Cho phép người dùng:
+
+- Nhập kích thước bàn cờ **N**.
+- Chọn thuật toán: **Minimax** hoặc **Alpha-Beta**.
+- Chơi trực tiếp với AI bằng **click chuột** trên bàn cờ.
+
+Hiển thị:
+
+- Lượt chơi hiện tại.
+- Kết quả ván cờ (AI thắng, người thắng, hòa).
+- Ký hiệu **X**, **O** trên bàn.
+
+---
+
+## 2. Mô tả bài toán
+
+Bài toán: xây dựng một chương trình cho phép người dùng chơi **cờ caro / Tic-Tac-Toe mở rộng** với máy tính trên bàn cờ **N×N**.
+
+- Người dùng **tự chọn N** ngay từ đầu, với điều kiện **N ≥ 3**.
+- Sau khi nhập N và bấm **Start Game**, chương trình:
+  - Tạo bàn cờ dạng lưới N×N.
+  - Mỗi ô là một nút bấm, ban đầu ở trạng thái trống, ký hiệu `"."`.
+  - Cho phép người dùng tương tác bằng việc click.
+
+### 2.1. Luật chơi
+
+- Có **hai người chơi**:
+  - Máy (AI) → quân **X**, luôn **đi trước**.
+  - Người chơi → quân **O**, đi sau.
+- Hai bên lần lượt đánh vào các ô trống, mỗi lượt chỉ được đánh **1 quân**.
+
+### 2.2. Điều kiện thắng
+
+Độ dài chuỗi quân cần để thắng phụ thuộc N:
+
+- Bàn 3×3:
+  - Thắng khi có **3 quân liên tiếp** (giống Tic-Tac-Toe cổ điển).
+- Bàn 4×4:
+  - Thắng khi có **4 quân liên tiếp**.
+- Bàn N×N với N ≥ 5:
+  - Thắng khi có **5 quân liên tiếp** (giống cờ caro).
+
+Chuỗi thắng được tính nếu có đủ số quân liên tiếp theo một trong 4 hướng:
+
+- Hàng ngang (trên cùng một dòng).
+- Cột dọc.
+- Đường chéo chính (tăng đồng thời hàng và cột).
+- Đường chéo phụ (tăng hàng, giảm cột).
+
+Khi:
+
+- Một bên tạo được chuỗi đủ dài → **thắng**, ván cờ kết thúc.
+- Bàn cờ đầy, không ai thắng → **hòa**.
+
+### 2.3. Giao diện chương trình (Tkinter)
+
+- Khi nhấn nút **Start Game**:
+  - Chương trình đọc N và kiểm tra:
+    - Phải là số nguyên.
+    - Không nhỏ hơn 3.
+  - Nếu hợp lệ:
+    - Tạo bàn cờ N×N.
+    - Các ô ban đầu là `"."`.
+    - Dòng trạng thái cho biết:
+      - Kích thước bàn cờ.
+      - Độ dài chuỗi cần để thắng.
+      - Vai trò: máy là X, người là O.
+
+- Trong quá trình chơi:
+  - Người sử dụng click vào ô muốn đánh:
+    - Nếu đúng lượt + ô trống → đặt quân O, cập nhật hiển thị.
+  - Sau mỗi nước:
+    - Kiểm tra thắng/thua/hòa.
+    - Nếu chưa kết thúc → chuyển lượt cho AI.
+  - Khi ván cờ kết thúc:
+    - Hiện hộp thoại thông báo:
+      - “AI thắng”
+      - “Bạn thắng”
+      - “Hòa”
+
+---
+
+## 3. Mô tả thuật toán
+
+Máy không đánh ngẫu nhiên mà sử dụng các thuật toán:
+
+- **Minimax**: thuật toán cơ bản cho trò chơi hai người.
+- **Cắt tỉa Alpha-Beta**: phiên bản tối ưu, cắt tỉa bớt nhánh.
+- **Hàm lượng giá (heuristic)**: đánh giá trạng thái ở độ sâu giới hạn.
+
+### 3.1. Tìm kiếm trong trò chơi hai người
+
+Trò chơi caro/Tic-Tac-Toe là trò chơi:
+
+- Hai người luân phiên.
+- Tổng bằng 0: một bên thắng thì bên kia thua.
+
+Mỗi trạng thái:
+
+- Một bên là người đang đi, bên kia là đối thủ.
+- Mỗi nước đi → sinh ra **trạng thái mới**.
+- Tập hợp các trạng thái nối tiếp hình thành **cây trò chơi (game tree)**.
+
+Nếu duyệt hết được cây trò chơi:
+
+- Về lý thuyết có thể tìm nước đi tối ưu.
+- Nhưng thực tế:
+  - Bàn lớn → số trạng thái rất nhiều.
+  - Không thể duyệt hết → phải:
+    - Giới hạn **độ sâu**.
+    - Dùng **hàm lượng giá** để ước lượng tại lá.
+
+Minimax & Alpha-Beta dùng mô hình:
+
+- Bên mình: MAX (tối đa hóa điểm).
+- Đối thủ: MIN (tối thiểu hóa điểm).
+
+### 3.2. Thuật toán Minimax
+
+Ý tưởng chính:
+
+- AI là bên **MAX**.
+- Đối thủ là bên **MIN**.
+
+Tại mỗi trạng thái:
+
+- Nếu là lượt MAX:
+  - Chọn nước đi làm **tăng** giá trị đánh giá nhiều nhất.
+- Nếu là lượt MIN:
+  - Giả định đối thủ chơi tối ưu và chọn nước đi làm **giảm** điểm của MAX.
+
+Cách làm:
+
+1. Duyệt cây trò chơi đệ quy đến:
+   - Trạng thái kết thúc (thắng/thua/hòa), hoặc
+   - Độ sâu giới hạn.
+2. Ở các trạng thái lá:
+   - Dùng **hàm lượng giá** để gán một giá trị số.
+3. Đi ngược lại:
+   - Ở nút MAX → lấy **max** của con.
+   - Ở nút MIN → lấy **min** của con.
+
+Kết quả:
+
+- Nút gốc cho biết:
+  - Giá trị tốt nhất mà AI đạt được nếu cả hai đều chơi tối ưu.
+- Nước đi tương ứng → AI chọn.
+
+Ưu điểm:
+
+- Rõ ràng, dễ hiểu, phù hợp để minh họa cách máy “suy nghĩ”.
+
+Nhược điểm:
+
+- Số trạng thái duyệt tăng rất nhanh.
+- Bàn lớn hoặc độ sâu cao → chạy chậm.
+
+### 3.3. Thuật toán cắt tỉa Alpha-Beta
+
+**Cắt tỉa Alpha-Beta** là cải tiến trên Minimax, giúp:
+
+- Giảm số trạng thái phải duyệt.
+- Giữ nguyên kết quả tối ưu như Minimax đầy đủ.
+
+Ý tưởng:
+
+- Trong quá trình duyệt:
+  - `alpha`: giá trị tốt nhất (lớn nhất) mà MAX có thể đảm bảo.
+  - `beta`: giá trị tốt nhất (nhỏ nhất) mà MIN có thể đảm bảo.
+- Khi xét một nhánh:
+  - Ở nút MAX:
+    - Nếu giá trị hiện tại ≥ `beta`:
+      - MIN ở mức trên **sẽ không chọn nhánh này nữa**.
+      - Có thể **dừng duyệt** các con còn lại (cắt tỉa).
+  - Ở nút MIN:
+    - Nếu giá trị hiện tại ≤ `alpha`:
+      - MAX cũng sẽ bỏ qua nhánh này ở mức trên.
+      - Cắt tỉa tương tự.
+
+Kết quả:
+
+- Bỏ qua nhiều nhánh **không ảnh hưởng** đến kết quả cuối cùng.
+- Duyệt nhanh hơn rất nhiều, đặc biệt khi:
+  - Các nước đi được sắp xếp “tốt” (nước mạnh xét trước).
+
+Trong bài này:
+
+- Alpha-Beta cho phép:
+  - Duyệt sâu hơn so với Minimax thuần, hoặc
+  - Giữ cùng độ sâu nhưng thời gian suy nghĩ ngắn hơn.
+
+### 3.4. Hàm lượng giá (heuristic) cho trạng thái bàn cờ
+
+Do không thể luôn duyệt đến khi ván cờ kết thúc, cần:
+
+> Hàm lượng giá giúp đánh giá tạm thời trạng thái trung gian.
+
+Trực giác:
+
+- Bên nào có nhiều chuỗi quân hơn (2, 3, 4, …) → lợi thế hơn.
+- Chuỗi gần thắng (4 trong luật thắng 5) → rất nguy hiểm.
+- Bên nào có nhiều cơ hội tạo chuỗi thắng hơn → thế cờ nghiêng về bên đó.
+
+Hàm lượng giá thực hiện:
+
+1. Xét **tất cả hàng, cột, đường chéo** trên bàn cờ.
+2. Đếm các đoạn liên tiếp độ dài đúng `win_len`:
+   - Đoạn chứa **cả 2 bên** → bỏ qua.
+   - Đoạn chỉ chứa quân của **một bên + ô trống**:
+     - Đếm số quân và cộng điểm theo trọng số:
+       - 1 quân → 1 điểm
+       - 2 quân → 8 điểm
+       - 3 quân → 40 điểm
+       - 4 quân → 200 điểm
+       - 5 quân → 10000 điểm
+3. Cộng điểm cho:
+   - AI.
+   - Người chơi.
+4. Giá trị cuối cùng:
+   ```text
+   heuristic = điểm của AI – điểm của người chơi
+
+Ok, mình viết lại **phần 4** cho chi tiết hơn, có **code + giải thích**, ở dạng **README.md** luôn nhé. Bạn chỉ cần copy từ đây dán vào README, thay thế phần 4 cũ là được.
+
+---
+
+## 4. Xây dựng chương trình
+
+Phần hiện thực chương trình gồm hai khối chính:
+
+1. **Logic trò chơi + thuật toán AI**  
+   - Biểu diễn bàn cờ (`Board`)
+   - Sinh nước đi (`generate_moves`)
+   - Hàm lượng giá (heuristic)
+   - Thuật toán **Minimax** và **Alpha-Beta**
+
+2. **Giao diện người dùng với Tkinter**  
+   - Lớp `TicTacToeGUI`
+   - Xử lý sự kiện click, cập nhật bàn cờ, lượt chơi, kết quả
+
+
+### 4.1. Import & khai báo hằng số
+
+```python
+from math import inf
+import tkinter as tk
+from tkinter import messagebox
+
+EMPTY = "."
+PLAYER_X = "X"
+PLAYER_O = "O"
+
+# Bán kính lân cận để sinh nước đi
+MOVE_RADIUS = 1
+
+# Trọng số cho chuỗi 1..5 quân liên tiếp
+WEIGHTS = {
+    1: 1,
+    2: 8,
+    3: 40,
+    4: 200,
+    5: 10000,
+}
+````
+
+**Giải thích:**
+
+* `from math import inf`: dùng `inf` (dương vô cực) để khởi tạo giá trị rất lớn/nhỏ trong Minimax & Alpha-Beta.
+* `tkinter` và `messagebox`: dùng để tạo giao diện (cửa sổ, button, hộp thoại thông báo).
+* `EMPTY`: ký hiệu ô trống (`"."`).
+* `PLAYER_X`: quân của **AI** (X).
+* `PLAYER_O`: quân của **người chơi** (O).
+* `MOVE_RADIUS = 1`: khi sinh nước đi, chỉ xét các ô trống trong vùng lân cận bán kính 1 quanh các quân đã đặt.
+* `WEIGHTS`: bảng trọng số dùng cho **hàm lượng giá**:
+
+  * Chuỗi 1 quân → 1 điểm.
+  * Chuỗi 2 quân → 8 điểm.
+  * Chuỗi 3 quân → 40 điểm.
+  * Chuỗi 4 quân → 200 điểm.
+  * Chuỗi 5 quân → 10000 điểm (xem như gần thắng tuyệt đối).
+
+---
+
+### 4.2. Lớp `Board` – biểu diễn bàn cờ & luật thắng
+
+```python
+class Board:
+    def __init__(self, n: int):
+        self.n = n
+        self.grid = [[EMPTY for _ in range(n)] for _ in range(n)]
+        # Quy định độ dài thắng theo N
+        if n <= 3:
+            self.win_len = 3
+        elif n == 4:
+            self.win_len = 4
+        else:
+            self.win_len = 5
+
+    def clone(self):
+        b = Board(self.n)
+        b.win_len = self.win_len
+        b.grid = [row[:] for row in self.grid]
+        return b
+
+    def is_empty(self) -> bool:
+        return all(cell == EMPTY for row in self.grid for cell in row)
+
+    def make_move(self, i: int, j: int, player: str):
+        self.grid[i][j] = player
+
+    def undo_move(self, i: int, j: int):
+        self.grid[i][j] = EMPTY
+
+    def in_bounds(self, i: int, j: int) -> bool:
+        return 0 <= i < self.n and 0 <= j < self.n
+```
+
+**Giải thích:**
+
+* `self.n`: kích thước bàn cờ (N×N).
+* `self.grid`: ma trận 2D `n × n`, mỗi ô ban đầu là `"."` (trống).
+* `self.win_len`: số quân liên tiếp cần để thắng:
+
+  * Nếu `n <= 3` → thắng 3.
+  * Nếu `n == 4` → thắng 4.
+  * Nếu `n >= 5` → thắng 5 (giống caro).
+* `clone()`: tạo bản sao của bàn cờ (hữu ích nếu muốn copy trạng thái).
+* `is_empty()`: kiểm tra bàn cờ có hoàn toàn trống không.
+* `make_move()` / `undo_move()`:
+
+  * Dùng trong Minimax/Alpha-Beta: thử đặt quân → đánh giá → hoàn lại.
+* `in_bounds()`: đảm bảo chỉ số `(i, j)` không vượt ra ngoài bàn.
+
+#### Kiểm tra người thắng & trạng thái kết thúc
+
+```python
+    def get_winner(self):
+        """Kiểm tra người thắng theo self.win_len."""
+        directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
+
+        for i in range(self.n):
+            for j in range(self.n):
+                if self.grid[i][j] == EMPTY:
+                    continue
+                player = self.grid[i][j]
+                for di, dj in directions:
+                    count = 1
+                    x, y = i + di, j + dj
+                    while self.in_bounds(x, y) and self.grid[x][y] == player:
+                        count += 1
+                        if count >= self.win_len:
+                            return player
+                        x += di
+                        y += dj
+        return None
+
+    def is_full(self) -> bool:
+        return all(cell != EMPTY for row in self.grid for cell in row)
+
+    def is_terminal(self) -> bool:
+        return self.get_winner() is not None or self.is_full()
+```
+
+* `get_winner()`:
+
+  * Duyệt toàn bộ ô `(i, j)` không trống.
+  * Với mỗi ô, kiểm tra 4 hướng:
+
+    * `(1, 0)`: dọc xuống.
+    * `(0, 1)`: ngang sang phải.
+    * `(1, 1)`: chéo chính.
+    * `(1, -1)`: chéo phụ.
+  * Đếm số quân liên tiếp `count`. Nếu `count >= win_len` → trả về người thắng (`X` hoặc `O`).
+* `is_full()`:
+
+  * Trả về `True` nếu không còn ô trống.
+* `is_terminal()`:
+
+  * Trạng thái kết thúc nếu:
+
+    * Có người thắng, hoặc
+    * Bàn cờ đầy (hòa).
+
+---
+
+### 4.3. Các hàm hỗ trợ logic
+
+```python
+def get_opponent(player: str) -> str:
+    return PLAYER_O if player == PLAYER_X else PLAYER_X
+```
+
+* Hàm tiện ích nhỏ:
+
+  * Nếu `player` là `X` → đối thủ là `O`.
+  * Nếu `player` là `O` → đối thủ là `X`.
+
+#### Hàm sinh nước đi – `generate_moves`
+
+```python
+def generate_moves(board: Board, radius: int = MOVE_RADIUS):
+    """
+    Sinh nước đi ứng cử viên với vùng lân cận.
+    """
+    n = board.n
+    moves = set()
+
+    if board.is_empty():
+        mid = n // 2
+        for di in range(-1, 2):
+            for dj in range(-1, 2):
+                x, y = mid + di, mid + dj
+                if board.in_bounds(x, y) and board.grid[x][y] == EMPTY:
+                    moves.add((x, y))
+        return list(moves)
+
+    for i in range(n):
+        for j in range(n):
+            if board.grid[i][j] != EMPTY:
+                for di in range(-radius, radius + 1):
+                    for dj in range(-radius, radius + 1):
+                        x, y = i + di, j + dj
+                        if board.in_bounds(x, y) and board.grid[x][y] == EMPTY:
+                            moves.add((x, y))
+
+    return list(moves)
+```
+
+**Ý tưởng:**
+
+* Nếu bàn còn trống:
+
+  * AI đánh quanh **trung tâm** để mở thế trận.
+* Nếu đã có quân:
+
+  * Duyệt tất cả ô có quân (`X` hoặc `O`).
+  * Với mỗi ô, xét vùng lân cận trong bán kính `radius` (ở đây = 1).
+  * Các ô `(x, y)`:
+
+    * Nằm trong bàn (`in_bounds`).
+    * Còn trống (`EMPTY`).
+  * → được thêm vào tập `moves`.
+* Dùng `set` để loại nước đi trùng, sau đó chuyển thành list.
+
+Việc chỉ sinh nước đi quanh vùng đang chơi giúp:
+
+* **Giảm mạnh số lượng nước đi** cần xét.
+* Thuật toán tìm kiếm chạy nhanh hơn.
+
+#### Hàm lấy tất cả line – `get_all_lines`
+
+```python
+def get_all_lines(board: Board):
+    """
+    Lấy tất cả các line (hàng, cột, chéo) có độ dài >= win_len.
+    """
+    n = board.n
+    L = board.win_len
+    lines = []
+
+    # Hàng ngang
+    for i in range(n):
+        if n >= L:
+            lines.append(board.grid[i][:])
+
+    # Hàng dọc
+    for j in range(n):
+        if n >= L:
+            col = [board.grid[i][j] for i in range(n)]
+            lines.append(col)
+
+    # Chéo chính (i - j = const)
+    for d in range(-n + 1, n):
+        diag = []
+        for i in range(n):
+            j = i - d
+            if 0 <= j < n:
+                diag.append(board.grid[i][j])
+        if len(diag) >= L:
+            lines.append(diag)
+
+    # Chéo phụ (i + j = const)
+    for s in range(0, 2 * n - 1):
+        diag = []
+        for i in range(n):
+            j = s - i
+            if 0 <= j < n:
+                diag.append(board.grid[i][j])
+        if len(diag) >= L:
+            lines.append(diag)
+
+    return lines
+```
+
+* Trả về một list các **line** (hàng, cột, đường chéo) để phục vụ cho việc đánh giá.
+* Chỉ giữ các line có độ dài ≥ `win_len` để có ý nghĩa trong thắng/thua.
+
+---
+
+### 4.4. Hàm lượng giá (heuristic)
+
+#### Đánh giá một line – `evaluate_line`
+
+```python
+def evaluate_line(line, player: str, win_len: int) -> int:
+    """
+    Tính điểm cho 'player' trên một line (list các ô).
+    """
+    score = 0
+    length = len(line)
+    opp = get_opponent(player)
+
+    for start in range(0, length - win_len + 1):
+        window = line[start:start + win_len]
+        if player in window and opp in window:
+            continue
+
+        count_p = window.count(player)
+        if count_p == 0:
+            continue
+
+        if count_p >= win_len:
+            score += WEIGHTS.get(win_len, WEIGHTS[5])
+        else:
+            score += WEIGHTS.get(count_p, 0)
+
+    return score
+```
+
+* Xét mọi đoạn con `window` có độ dài `win_len` trên một line:
+
+  * Nếu `window` chứa cả quân mình và quân đối thủ → vị trí bị chặn → bỏ qua.
+  * `count_p`: số quân của `player` trong đoạn:
+
+    * Nếu `count_p == 0` → không có quân mình → bỏ qua.
+    * Nếu `count_p >= win_len` → coi như chuỗi thắng → cộng trọng số lớn.
+    * Nếu `1 <= count_p < win_len` → cộng theo `WEIGHTS[count_p]`.
+
+#### Đánh giá toàn bộ bàn – `evaluate`
+
+```python
+def evaluate(board: Board, player: str) -> int:
+    """
+    Heuristic: score(player) - score(opponent).
+    """
+    winner = board.get_winner()
+    opp = get_opponent(player)
+    if winner == player:
+        return WEIGHTS.get(board.win_len, WEIGHTS[5]) * 10
+    elif winner == opp:
+        return -WEIGHTS.get(board.win_len, WEIGHTS[5]) * 10
+
+    lines = get_all_lines(board)
+    my_score = 0
+    opp_score = 0
+
+    for line in lines:
+        my_score += evaluate_line(line, player, board.win_len)
+        opp_score += evaluate_line(line, opp, board.win_len)
+
+    return my_score - opp_score
+```
+
+* Nếu đã có người thắng thật sự:
+
+  * `player` thắng → trả về giá trị dương rất lớn.
+  * Đối thủ thắng → giá trị âm rất lớn.
+* Nếu chưa kết thúc:
+
+  * Lấy tất cả line.
+  * Cộng điểm cho cả:
+
+    * `player` (AI).
+    * `opp` (người).
+  * Trả về: `my_score - opp_score`:
+
+    * > 0: thế cờ có lợi cho AI.
+    * < 0: thế cờ có lợi cho người chơi.
+
+---
+
+### 4.5. Thuật toán Minimax & Alpha-Beta trong code
+
+#### Hàm Minimax
+
+```python
+def minimax(board: Board, depth: int, maximizing_player: bool, player: str):
+    """
+    Minimax với depth giới hạn.
+    """
+    if depth == 0 or board.is_terminal():
+        return evaluate(board, player), None
+
+    current_player = player if maximizing_player else get_opponent(player)
+    moves = generate_moves(board)
+
+    if not moves:
+        return evaluate(board, player), None
+
+    if maximizing_player:
+        best_value = -inf
+        best_move = None
+        for (i, j) in moves:
+            board.make_move(i, j, current_player)
+            value, _ = minimax(board, depth - 1, False, player)
+            board.undo_move(i, j)
+            if value > best_value:
+                best_value = value
+                best_move = (i, j)
+        return best_value, best_move
+    else:
+        best_value = inf
+        best_move = None
+        for (i, j) in moves:
+            board.make_move(i, j, current_player)
+            value, _ = minimax(board, depth - 1, True, player)
+            board.undo_move(i, j)
+            if value < best_value:
+                best_value = value
+                best_move = (i, j)
+        return best_value, best_move
+```
+
+* Dừng khi:
+
+  * Đạt `depth == 0`, hoặc
+  * Trạng thái terminal (thắng/thua/hòa).
+* `current_player`:
+
+  * Nếu `maximizing_player=True` → lượt của `player` (AI).
+  * Nếu `False` → lượt đối thủ.
+* Nhánh MAX:
+
+  * Khởi tạo `best_value = -inf`.
+  * Duyệt các nước `(i, j)`:
+
+    * Đặt quân, gọi đệ quy với `maximizing_player=False`.
+    * Hoàn lại nước cờ (`undo_move`).
+    * Chọn nước có `value` lớn nhất.
+* Nhánh MIN:
+
+  * Tương tự nhưng chọn giá trị **nhỏ nhất**.
+
+#### Sắp xếp nước đi – `order_moves`
+
+```python
+def order_moves(board: Board, moves, player: str):
+    """
+    Sắp xếp nước đi để alpha-beta cắt tỉa tốt hơn.
+    """
+    scored = []
+    for (i, j) in moves:
+        board.make_move(i, j, player)
+        score = evaluate(board, player)
+        board.undo_move(i, j)
+        scored.append((score, (i, j)))
+
+    scored.sort(reverse=True, key=lambda x: x[0])
+    return [m for _, m in scored]
+```
+
+* Đánh giá sơ bộ từng nước đi:
+
+  * Thử đặt quân `player` tại `(i, j)` → gọi `evaluate`.
+  * Lưu `(score, move)`.
+* Sắp xếp nước theo `score` giảm dần.
+* Mục đích: nước “có triển vọng” (score cao) được xét trước → **Alpha-Beta cắt tỉa tốt hơn**.
+
+#### Hàm Alpha-Beta
+
+```python
+def alphabeta(board: Board, depth: int, alpha: float, beta: float,
+              maximizing_player: bool, player: str):
+    """
+    Alpha-beta pruning.
+    """
+    if depth == 0 or board.is_terminal():
+        return evaluate(board, player), None
+
+    current_player = player if maximizing_player else get_opponent(player)
+    moves = generate_moves(board)
+
+    if not moves:
+        return evaluate(board, player), None
+
+    moves = order_moves(board, moves, current_player)
+
+    if maximizing_player:
+        best_value = -inf
+        best_move = None
+        for (i, j) in moves:
+            board.make_move(i, j, current_player)
+            value, _ = alphabeta(board, depth - 1, alpha, beta, False, player)
+            board.undo_move(i, j)
+            if value > best_value:
+                best_value = value
+                best_move = (i, j)
+            alpha = max(alpha, value)
+            if beta <= alpha:
+                break
+        return best_value, best_move
+    else:
+        best_value = inf
+        best_move = None
+        for (i, j) in moves:
+            board.make_move(i, j, current_player)
+            value, _ = alphabeta(board, depth - 1, alpha, beta, True, player)
+            board.undo_move(i, j)
+            if value < best_value:
+                best_value = value
+                best_move = (i, j)
+            beta = min(beta, value)
+            if beta <= alpha:
+                break
+        return best_value, best_move
+```
+
+* Giống Minimax nhưng thêm:
+
+  * `alpha`: giá trị tốt nhất mà MAX đạt được.
+  * `beta`: giá trị tốt nhất mà MIN đạt được.
+* Nhánh MAX:
+
+  * Cập nhật `alpha = max(alpha, value)`.
+  * Nếu `beta <= alpha` → cắt tỉa (không duyệt các nước còn lại).
+* Nhánh MIN:
+
+  * Cập nhật `beta = min(beta, value)`.
+  * Nếu `beta <= alpha` → cắt tỉa.
+
+#### Chọn độ sâu & gọi thuật toán
+
+```python
+def choose_depth(n: int, algo: str) -> int:
+    """
+    Chọn depth dựa theo kích thước bàn và loại thuật toán.
+    """
+    if algo == "minimax":
+        if n <= 4:
+            return 5
+        elif n <= 7:
+            return 4
+        elif n <= 10:
+            return 3
+        else:
+            return 2
+    else:  # alphabeta
+        if n <= 4:
+            return 6
+        elif n <= 7:
+            return 5
+        elif n <= 10:
+            return 4
+        else:
+            return 3
+
+
+def choose_best_move(board: Board, player: str, algo: str = "alphabeta"):
+    depth = choose_depth(board.n, algo)
+    if algo == "minimax":
+        value, move = minimax(board, depth, True, player)
+    else:
+        value, move = alphabeta(board, depth, -inf, inf, True, player)
+    return value, move
+```
+
+* Bàn càng to (`n` lớn) → depth càng giảm để tránh bị chậm.
+* Với Alpha-Beta, có thể cho depth lớn hơn Minimax.
+* `choose_best_move`:
+
+  * Tự chọn depth tương ứng với kích thước bàn/thuật toán.
+  * Gọi đúng thuật toán (`minimax` hoặc `alphabeta`).
+  * Trả về: `(giá trị tốt nhất, nước đi tương ứng)`.
+
+---
+
+### 4.6. Giao diện Tkinter – `TicTacToeGUI`
+
+```python
+class TicTacToeGUI:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("TicTacToe NxN - Minimax / Alpha-Beta")
+
+        # Khung cấu hình
+        config_frame = tk.Frame(root)
+        config_frame.pack(pady=10)
+
+        tk.Label(config_frame, text="N:").grid(row=0, column=0, padx=5)
+        self.n_var = tk.StringVar(value="10")
+        self.n_entry = tk.Entry(config_frame, width=5, textvariable=self.n_var)
+        self.n_entry.grid(row=0, column=1, padx=5)
+
+        tk.Label(config_frame, text="Algorithm:").grid(row=0, column=2, padx=5)
+        self.algo_var = tk.StringVar(value="alphabeta")
+        algo_menu = tk.OptionMenu(config_frame, self.algo_var, "minimax", "alphabeta")
+        algo_menu.grid(row=0, column=3, padx=5)
+
+        self.start_button = tk.Button(config_frame, text="Start Game", command=self.start_game)
+        self.start_button.grid(row=0, column=4, padx=10)
+
+        # Khung status
+        self.status_var = tk.StringVar(value="Nhập N và chọn thuật toán, rồi bấm Start Game")
+        status_label = tk.Label(root, textvariable=self.status_var)
+        status_label.pack(pady=5)
+
+        # Khung bàn cờ
+        self.board_frame = tk.Frame(root)
+        self.board_frame.pack(pady=10)
+
+        # Các biến game
+        self.board = None
+        self.buttons = []
+        self.ai_player = PLAYER_X
+        self.human_player = PLAYER_O
+        self.current = PLAYER_X
+        self.game_over = False
+```
+
+* **Khung cấu hình**:
+
+  * Ô nhập `N`.
+  * Menu chọn thuật toán: `minimax` hoặc `alphabeta`.
+  * Nút `Start Game`.
+* **Status**:
+
+  * Thông báo hướng dẫn, lượt chơi, kết quả.
+* **Khung bàn cờ**:
+
+  * Chứa lưới button N×N.
+* Biến game:
+
+  * `board`: đối tượng `Board` hiện tại.
+  * `buttons`: ma trận button trên GUI.
+  * `ai_player = X`, `human_player = O`.
+  * `current`: lượt đi hiện tại.
+  * `game_over`: đánh dấu ván cờ đã kết thúc.
+
+#### Khởi tạo ván mới – `start_game`
+
+```python
+    def clear_board_frame(self):
+        for widget in self.board_frame.winfo_children():
+            widget.destroy()
+        self.buttons = []
+
+    def start_game(self):
+        # Đọc N
+        try:
+            n = int(self.n_var.get())
+            if n < 3:
+                raise ValueError
+        except ValueError:
+            messagebox.showerror("Lỗi", "N phải là số nguyên >= 3")
+            return
+
+        # Cảnh báo N quá to (giao diện sẽ rất rộng)
+        if n > 15:
+            if not messagebox.askyesno(
+                "Cảnh báo",
+                "N > 15 sẽ làm giao diện rất lớn, bạn vẫn muốn tiếp tục?"
+            ):
+                return
+
+        self.board = Board(n)
+        self.current = PLAYER_X
+        self.game_over = False
+
+        self.clear_board_frame()
+
+        # Tạo lưới button
+        self.buttons = []
+        for i in range(n):
+            row_btns = []
+            for j in range(n):
+                btn = tk.Button(
+                    self.board_frame,
+                    text=".",
+                    width=2,
+                    height=1,
+                    font=("Consolas", 14),
+                    command=lambda i=i, j=j: self.on_cell_click(i, j)
+                )
+                btn.grid(row=i, column=j)
+                row_btns.append(btn)
+            self.buttons.append(row_btns)
+
+        self.status_var.set(
+            f"Bàn {n}x{n}, thắng {self.board.win_len}. AI: X (đi trước), Bạn: O."
+        )
+
+        # Cho AI đi trước luôn (X)
+        self.root.after(200, self.ai_move)
+```
+
+* Kiểm tra `N`:
+
+  * Phải là số nguyên ≥ 3.
+  * Nếu `N > 15` → cảnh báo giao diện rất rộng.
+* Tạo `Board(n)`.
+* Xóa bàn cũ, tạo lưới button N×N:
+
+  * Mỗi button ban đầu hiển thị `"."`.
+  * Khi click → gọi `on_cell_click(i, j)`.
+* Cập nhật status.
+* Gọi `ai_move` sau 200ms để AI đánh nước đầu tiên.
+
+#### Xử lý click của người – `on_cell_click`
+
+```python
+    def on_cell_click(self, i, j):
+        if self.board is None or self.game_over:
+            return
+        if self.current != self.human_player:
+            return
+        if not self.board.in_bounds(i, j) or self.board.grid[i][j] != EMPTY:
+            return
+
+        # Người đánh
+        self.board.make_move(i, j, self.human_player)
+        self.update_button(i, j)
+        self.check_game_state()
+
+        if not self.game_over:
+            self.current = self.ai_player
+            self.status_var.set("Lượt AI suy nghĩ...")
+            self.root.after(200, self.ai_move)
+```
+
+* Chỉ xử lý nếu:
+
+  * Đã có `board`.
+  * Chưa game over.
+  * Đúng **lượt của người chơi**.
+  * Ô `(i, j)` hợp lệ và đang trống.
+* Đặt quân `O`:
+
+  * Cập nhật trên `Board` và trên button.
+  * Kiểm tra thắng/thua/hòa.
+* Nếu ván chưa kết thúc:
+
+  * Chuyển lượt sang AI.
+  * Gọi `ai_move`.
+
+#### AI đánh – `ai_move`
+
+```python
+    def ai_move(self):
+        if self.board is None or self.game_over:
+            return
+        if self.current != self.ai_player:
+            return
+
+        # Tính nước đi
+        _, move = choose_best_move(self.board, self.ai_player, algo=self.algo_var.get())
+        if move is None:
+            # Không còn nước đi
+            self.status_var.set("Không còn nước đi. Hòa!")
+            self.game_over = True
+            return
+
+        i, j = move
+        self.board.make_move(i, j, self.ai_player)
+        self.update_button(i, j)
+
+        self.check_game_state()
+
+        if not self.game_over:
+            self.current = self.human_player
+            self.status_var.set("Lượt bạn (O). Click vào ô để đánh.")
+```
+
+* Gọi `choose_best_move` với thuật toán mà người dùng chọn:
+
+  * `minimax` hoặc `alphabeta`.
+* Nếu không còn nước đi → ván hòa.
+* Ngược lại:
+
+  * Đặt quân `X` trên `(i, j)`.
+  * Cập nhật GUI.
+  * Kiểm tra thắng/thua/hòa.
+  * Nếu chưa kết thúc → trả lượt cho người chơi.
+
+#### Cập nhật button & kiểm tra trạng thái
+
+```python
+    def update_button(self, i, j):
+        if self.buttons:
+            self.buttons[i][j]["text"] = self.board.grid[i][j]
+
+    def check_game_state(self):
+        winner = self.board.get_winner()
+        if winner is not None:
+            if winner == self.ai_player:
+                self.status_var.set("AI thắng!")
+                messagebox.showinfo("Kết quả", "AI thắng!")
+            else:
+                self.status_var.set("Bạn thắng!")
+                messagebox.showinfo("Kết quả", "Bạn thắng!")
+            self.game_over = True
+            return
+
+        if self.board.is_full():
+            self.status_var.set("Hòa!")
+            messagebox.showinfo("Kết quả", "Hòa!")
+            self.game_over = True
+```
+
+* `update_button`: đồng bộ nội dung button với trạng thái `grid`.
+* `check_game_state`:
+
+  * Gọi `get_winner()`:
+
+    * Nếu AI thắng → hiện “AI thắng!”.
+    * Nếu người thắng → hiện “Bạn thắng!”.
+  * Nếu không ai thắng, nhưng bàn đầy → “Hòa!”.
+  * Đặt `game_over = True` để kết thúc ván.
+
+#### Hàm `main`
+
+```python
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = TicTacToeGUI(root)
+    root.mainloop()
+```
+
+* Tạo cửa sổ Tkinter.
+* Khởi tạo `TicTacToeGUI`.
+* Gọi `root.mainloop()` để chạy vòng lặp GUI.
+
+
